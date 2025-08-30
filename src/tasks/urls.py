@@ -1,20 +1,20 @@
 from django.urls import path
 from .views import (
-    TaskCreateView,
-    TaskListAPIView,
+    TaskListCreateAPIView,
     TaskDetailAPIView,
+    SubTaskListCreateAPIView,
+    SubTaskDetailUpdateDeleteAPIView,
     TaskStatisticsAPIView,
-    SubTaskListCreateView,
-    SubTaskDetailUpdateDeleteView,
     TaskListByDayView,
 )
 
 urlpatterns = [
-    path('create/', TaskCreateView.as_view(), name='task-create'),
-    path('', TaskListAPIView.as_view(), name='task-list'),
-    path('<int:id>/', TaskDetailAPIView.as_view(), name='task-detail'),
-    path('statistics/', TaskStatisticsAPIView.as_view(), name='task-statistics'),
-    path('subtasks/', SubTaskListCreateView.as_view(), name='subtask-list-create'),
-    path('subtasks/<int:id>/', SubTaskDetailUpdateDeleteView.as_view(), name='subtask-detail-update-delete'),
-    path('tasks-by-day/', TaskListByDayView.as_view(), name='tasks-by-day'),
+    path('tasks/', TaskListCreateAPIView.as_view(), name='task-list-create'),
+    path('tasks/<int:id>/', TaskDetailAPIView.as_view(), name='task-detail'),
+
+    path('subtasks/', SubTaskListCreateAPIView.as_view(), name='subtask-list-create'),
+    path('subtasks/<int:id>/', SubTaskDetailUpdateDeleteAPIView.as_view(), name='subtask-detail'),
+
+    path('tasks/statistics/', TaskStatisticsAPIView.as_view(), name='task-statistics'),
+    path('tasks/by-day/', TaskListByDayView.as_view(), name='task-list-by-day'),
 ]
