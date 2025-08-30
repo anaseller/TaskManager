@@ -3,8 +3,13 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.db.models import Count
 from django.utils import timezone
-from .models import Task
-from .serializers import TaskSerializer
+from .models import Task, SubTask
+from .serializers import (
+    TaskCreateSerializer,
+    TaskSerializer,
+    TaskDetailSerializer,
+    SubTaskSerializer
+)
 
 
 class TaskCreateView(generics.CreateAPIView):
@@ -12,7 +17,7 @@ class TaskCreateView(generics.CreateAPIView):
     Эндпоинт для создания новой задачи
     """
     queryset = Task.objects.all()
-    serializer_class = TaskSerializer
+    serializer_class = TaskCreateSerializer
 
 
 class TaskListAPIView(generics.ListAPIView):
@@ -52,3 +57,20 @@ class TaskStatisticsAPIView(APIView):
             'overdue_tasks': overdue_tasks
         }
         return Response(statistics)
+
+class SubTaskListCreateView(generics.ListCreateAPIView):
+    """
+    Эндпоинт для создания подзадачи и получения списка всех подзадач
+    """
+    queryset = SubTask.objects.all()
+    serializer_class = SubTaskSerializer
+
+
+class SubTaskDetailUpdateDeleteView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    Эндпоинт для получения, обновления и удаления конкретной подзадачи
+    """
+    queryset = SubTask.objects.all()
+    serializer_class = SubTaskSerializer
+    lookup_field = 'id'
+
