@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'django_filters',
     'rest_framework_simplejwt',
     'drf_yasg',
+    'rest_framework_simplejwt.token_blacklist',
 
     'src.tasks.apps.TasksConfig',
 ]
@@ -58,6 +59,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'src.tasks.middlewares.JWTCookieMiddleware',
 ]
 
 ROOT_URLCONF = 'core.urls'
