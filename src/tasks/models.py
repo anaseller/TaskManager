@@ -1,4 +1,5 @@
 from django.db import models
+from django.conf import settings
 from django.utils import timezone
 
 
@@ -48,6 +49,11 @@ class Task(models.Model):
     )
     description = models.TextField(blank=True, null=True)
     categories = models.ManyToManyField(Category, related_name='tasks')
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='tasks'
+    )
     status = models.CharField(
         max_length=20,
         choices=Status.choices,
@@ -76,6 +82,13 @@ class SubTask(models.Model):
         on_delete=models.CASCADE,
         related_name='subtasks'
     )
+
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='subtasks'
+    )
+
     status = models.CharField(
         max_length=20,
         choices=Status.choices,
