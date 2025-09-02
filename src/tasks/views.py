@@ -1,6 +1,7 @@
-from rest_framework import status, generics
+from rest_framework import status, generics, filters
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models.functions import ExtractWeekDay
 from django.db.models import Count, Q
 from django.utils import timezone
@@ -26,20 +27,17 @@ WEEKDAY_MAPPING = {
 }
 
 
-class TaskCreateView(generics.CreateAPIView):
+class TaskListCreateAPIView(generics.ListCreateAPIView):
     """
-    Эндпоинт для создания новой задачи
-    """
-    queryset = Task.objects.all()
-    serializer_class = TaskCreateSerializer
-
-
-class TaskListAPIView(generics.ListAPIView):
-    """
-    Эндпоинт для получения списка всех задач
+    Эндпоинт для создания новой задачи и получения списка всех задач
     """
     queryset = Task.objects.all()
     serializer_class = TaskSerializer
+    pagination_class = StandardResultsSetPagination
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['status', 'deadline']
+    search_fields = ['title', 'description']
+    ordering_fields = ['created_at']
 
 
 class TaskDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
@@ -51,11 +49,32 @@ class TaskDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     lookup_field = 'id'
 
 
+class SubTaskListCreateAPIView(generics.ListCreateAPIView):
+    """
+    Эндпоинт для создания подзадачи и получения списка всех подзадач
+    """
+    queryset = SubTask.objects.all()
+    serializer_class = SubTaskSerializer
+    pagination_class = StandardResultsSetPagination
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['status', 'deadline']
+    search_fields = ['title', 'description']
+    ordering_fields = ['created_at']
+
+
+class SubTaskDetailUpdateDeleteAPIView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    Эндпоинт для получения, обновления и удаления конкретной подзадачи
+    """
+    queryset = SubTask.objects.all()
+    serializer_class = SubTaskSerializer
+    lookup_field = 'id'
+
+
 class TaskStatisticsAPIView(APIView):
     """
     Эндпоинт для получения статистики задач
     """
-
     def get(self, request):
         total_tasks = Task.objects.count()
         tasks_by_status = Task.objects.values('status').annotate(count=Count('status'))
@@ -69,6 +88,25 @@ class TaskStatisticsAPIView(APIView):
             'overdue_tasks': overdue_tasks
         }
         return Response(statistics)
+
+
+class TaskListByDayView(generics.ListAPIView):
+    """
+    Эндпоинт для получения списка задач по дню недели
+    """
+    serializer_class = TaskSerializer
+    def get_queryset(self):
+        queryset = Task.objects.all()
+        day_of_week = self.request.query_params.get('day_of_week', None)
+        if day_of_week:
+            try:
+                day_num = WEEKDAY_MAPPING[day_of_week.lower()]
+                queryset = queryset.annotate(
+                    weekday=ExtractWeekDay('created_at')
+                ).filter(weekday=day_num)
+            except KeyError:
+                return Task.objects.none()
+        return queryset
 
 
 class SubTaskListCreateView(generics.ListCreateAPIView):
@@ -99,24 +137,3 @@ class SubTaskDetailUpdateDeleteView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = SubTaskSerializer
     lookup_field = 'id'
 
-
-class TaskListByDayView(generics.ListAPIView):
-    """
-    Эндпоинт для получения списка задач по дню недели
-    """
-    serializer_class = TaskSerializer
-
-    def get_queryset(self):
-        queryset = Task.objects.all()
-        day_of_week = self.request.query_params.get('day_of_week', None)
-
-        if day_of_week:
-            try:
-                day_num = WEEKDAY_MAPPING[day_of_week.lower()]
-                queryset = queryset.annotate(
-                    weekday=ExtractWeekDay('created_at')
-                ).filter(weekday=day_num)
-            except KeyError:
-                return Task.objects.none()  # Возвращаем пустой queryset, если день недели не найден
-
-        return queryset
