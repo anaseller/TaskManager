@@ -8,6 +8,9 @@ from django.db.models import Count, Q
 from django.utils import timezone
 from rest_framework.permissions import IsAuthenticated
 
+from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.tokens import RefreshToken, TokenError
+
 from .models import Task, SubTask, Category
 from .serializers import (
     TaskSerializer,
@@ -15,7 +18,8 @@ from .serializers import (
     TaskDetailSerializer,
     SubTaskSerializer,
     SubTaskCreateSerializer,
-    CategorySerializer
+    CategorySerializer,
+    UserRegistrationSerializer
 )
 from .pagination import StandardResultsSetPagination
 from .permissions import IsOwnerOrReadOnly
@@ -31,6 +35,47 @@ WEEKDAY_MAPPING = {
     'воскресенье': 7,
 }
 
+class CustomTokenObtainPairView(TokenObtainPairView):
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        if response.status_code == 200:
+            access_token = response.data['access']
+            refresh_token = response.data['refresh']
+            response.set_cookie('access', access_token, httponly=True)
+            response.set_cookie('refresh', refresh_token, httponly=True)
+            return response
+        return response
+
+class UserRegistrationView(APIView):
+    permission_classes = []  # Разрешен доступ без аутентификации
+
+    def post(self, request):
+        serializer = UserRegistrationSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            return Response({"message": "The user has been successfully registered.", "username": user.username}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserLogoutView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request):
+        try:
+            refresh_token = request.COOKIES.get('refresh')
+            if not refresh_token:
+                return Response({"detail": "Refresh token not found."}, status=status.HTTP_400_BAD_REQUEST)
+
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+
+            response = Response({"detail": "Successfully logged out."}, status=status.HTTP_200_OK)
+            response.delete_cookie('access')
+            response.delete_cookie('refresh')
+            return response
+
+        except TokenError:
+            return Response({"detail": "Invalid refresh token."}, status=status.HTTP_400_BAD_REQUEST)
 
 class TaskListCreateAPIView(generics.ListCreateAPIView):
     """
