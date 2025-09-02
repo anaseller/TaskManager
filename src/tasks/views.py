@@ -6,6 +6,8 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models.functions import ExtractWeekDay
 from django.db.models import Count, Q
 from django.utils import timezone
+from rest_framework.permissions import IsAuthenticated
+
 from .models import Task, SubTask, Category
 from .serializers import (
     TaskSerializer,
@@ -16,6 +18,7 @@ from .serializers import (
     CategorySerializer
 )
 from .pagination import StandardResultsSetPagination
+
 
 WEEKDAY_MAPPING = {
     'понедельник': 1,
@@ -39,6 +42,7 @@ class TaskListCreateAPIView(generics.ListCreateAPIView):
     filterset_fields = ['status', 'deadline']
     search_fields = ['title', 'description']
     ordering_fields = ['created_at']
+    permission_classes = [IsAuthenticated]
 
 
 class TaskDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
@@ -48,6 +52,7 @@ class TaskDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Task.objects.all()
     serializer_class = TaskDetailSerializer
     lookup_field = 'id'
+    permission_classes = [IsAuthenticated]
 
 
 class TaskListByDayOfWeekAPIView(generics.ListAPIView):
@@ -56,6 +61,7 @@ class TaskListByDayOfWeekAPIView(generics.ListAPIView):
     """
     serializer_class = TaskSerializer
     pagination_class = StandardResultsSetPagination
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         queryset = Task.objects.all()
@@ -77,6 +83,7 @@ class SubTaskListCreateView(generics.ListCreateAPIView):
     """
     serializer_class = SubTaskSerializer
     pagination_class = StandardResultsSetPagination
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         queryset = SubTask.objects.order_by('-created_at')
@@ -98,6 +105,7 @@ class SubTaskDetailUpdateDeleteView(generics.RetrieveUpdateDestroyAPIView):
     queryset = SubTask.objects.all()
     serializer_class = SubTaskSerializer
     lookup_field = 'id'
+    permission_classes = [IsAuthenticated]
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
@@ -106,6 +114,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
     """
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
+    permission_classes = [IsAuthenticated]
 
     @action(detail=False, methods=['get'])
     def count_tasks(self, request):
