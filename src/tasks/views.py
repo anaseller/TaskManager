@@ -1,6 +1,7 @@
-from rest_framework import status, generics, filters
+from rest_framework import status, generics, filters, viewsets
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.decorators import action
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models.functions import ExtractWeekDay
 from django.db.models import Count, Q
@@ -49,52 +50,13 @@ class TaskDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     lookup_field = 'id'
 
 
-class SubTaskListCreateAPIView(generics.ListCreateAPIView):
+class TaskListByDayOfWeekAPIView(generics.ListAPIView):
     """
-    Эндпоинт для создания подзадачи и получения списка всех подзадач
-    """
-    queryset = SubTask.objects.all()
-    serializer_class = SubTaskSerializer
-    pagination_class = StandardResultsSetPagination
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['status', 'deadline']
-    search_fields = ['title', 'description']
-    ordering_fields = ['created_at']
-
-
-class SubTaskDetailUpdateDeleteAPIView(generics.RetrieveUpdateDestroyAPIView):
-    """
-    Эндпоинт для получения, обновления и удаления конкретной подзадачи
-    """
-    queryset = SubTask.objects.all()
-    serializer_class = SubTaskSerializer
-    lookup_field = 'id'
-
-
-class TaskStatisticsAPIView(APIView):
-    """
-    Эндпоинт для получения статистики задач
-    """
-    def get(self, request):
-        total_tasks = Task.objects.count()
-        tasks_by_status = Task.objects.values('status').annotate(count=Count('status'))
-        overdue_tasks = Task.objects.filter(
-            deadline__lt=timezone.now(),
-            status__in=['New', 'In progress', 'Pending', 'Blocked']
-        ).count()
-        statistics = {
-            'total_tasks': total_tasks,
-            'tasks_by_status': list(tasks_by_status),
-            'overdue_tasks': overdue_tasks
-        }
-        return Response(statistics)
-
-
-class TaskListByDayView(generics.ListAPIView):
-    """
-    Эндпоинт для получения списка задач по дню недели
+    Эндпоинт для получения списка задач по дню недели.
     """
     serializer_class = TaskSerializer
+    pagination_class = StandardResultsSetPagination
+
     def get_queryset(self):
         queryset = Task.objects.all()
         day_of_week = self.request.query_params.get('day_of_week', None)
@@ -136,4 +98,18 @@ class SubTaskDetailUpdateDeleteView(generics.RetrieveUpdateDestroyAPIView):
     queryset = SubTask.objects.all()
     serializer_class = SubTaskSerializer
     lookup_field = 'id'
+
+
+class CategoryViewSet(viewsets.ModelViewSet):
+    """
+    Вьюсет для CRUD операций с категориями и подсчета количества задач
+    """
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+
+    @action(detail=False, methods=['get'])
+    def count_tasks(self, request):
+
+        categories_with_task_count = Category.objects.annotate(task_count=Count('tasks')).values('id', 'name', 'task_count')
+        return Response(categories_with_task_count)
 

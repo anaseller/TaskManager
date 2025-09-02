@@ -5,7 +5,6 @@ from django.utils import timezone
 
 class SubTaskSerializer(serializers.ModelSerializer):
 
-
     class Meta:
         model = SubTask
         fields = '__all__'
@@ -17,7 +16,7 @@ class SubTaskCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = SubTask
-        fields = '__all__'
+        fields = '__all__'\
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -33,12 +32,6 @@ class CategorySerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Категория с таким именем уже существует")
         return value
 
-    def create(self, validated_data):
-        return super().create(validated_data)
-
-    def update(self, instance, validated_data):
-        return super().update(instance, validated_data)
-
 
 class TaskSerializer(serializers.ModelSerializer):
 
@@ -46,7 +39,7 @@ class TaskSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Task
-        fields = '__all__'
+        fields = '__all__'\
 
 
 class TaskCreateSerializer(serializers.ModelSerializer):
