@@ -18,6 +18,7 @@ from .serializers import (
     CategorySerializer
 )
 from .pagination import StandardResultsSetPagination
+from .permissions import IsOwnerOrReadOnly
 
 
 WEEKDAY_MAPPING = {
@@ -44,6 +45,9 @@ class TaskListCreateAPIView(generics.ListCreateAPIView):
     ordering_fields = ['created_at']
     permission_classes = [IsAuthenticated]
 
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
+
 
 class TaskDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     """
@@ -52,7 +56,7 @@ class TaskDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Task.objects.all()
     serializer_class = TaskDetailSerializer
     lookup_field = 'id'
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
 
 
 class TaskListByDayOfWeekAPIView(generics.ListAPIView):
@@ -85,6 +89,9 @@ class SubTaskListCreateView(generics.ListCreateAPIView):
     pagination_class = StandardResultsSetPagination
     permission_classes = [IsAuthenticated]
 
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
+
     def get_queryset(self):
         queryset = SubTask.objects.order_by('-created_at')
         task_title_param = self.request.query_params.get('task_title', None)
@@ -105,7 +112,7 @@ class SubTaskDetailUpdateDeleteView(generics.RetrieveUpdateDestroyAPIView):
     queryset = SubTask.objects.all()
     serializer_class = SubTaskSerializer
     lookup_field = 'id'
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
@@ -122,3 +129,13 @@ class CategoryViewSet(viewsets.ModelViewSet):
         categories_with_task_count = Category.objects.annotate(task_count=Count('tasks')).values('id', 'name', 'task_count')
         return Response(categories_with_task_count)
 
+class CurrentUserTasksAPIView(generics.ListAPIView):
+    """
+    Получение списка задач, принадлежащих только текущему пользователю
+    """
+    serializer_class = TaskSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Фильтруем задачи по текущему пользователю
+        return Task.objects.filter(owner=self.request.user).order_by('-created_at')

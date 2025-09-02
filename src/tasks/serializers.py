@@ -4,6 +4,7 @@ from django.utils import timezone
 
 
 class SubTaskSerializer(serializers.ModelSerializer):
+    owner = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model = SubTask
@@ -13,6 +14,7 @@ class SubTaskSerializer(serializers.ModelSerializer):
 class SubTaskCreateSerializer(serializers.ModelSerializer):
 
     created_at = serializers.DateTimeField(read_only=True)
+    owner = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model = SubTask
@@ -36,6 +38,7 @@ class CategorySerializer(serializers.ModelSerializer):
 class TaskSerializer(serializers.ModelSerializer):
 
     categories = CategorySerializer(many=True, read_only=True)
+    owner = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model = Task
@@ -50,6 +53,8 @@ class TaskCreateSerializer(serializers.ModelSerializer):
         allow_empty=True,
         required=False
     )
+
+    owner = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model = Task
@@ -66,6 +71,7 @@ class TaskDetailSerializer(serializers.ModelSerializer):
 
     subtasks = SubTaskSerializer(many=True, read_only=True)
     categories = CategorySerializer(many=True, read_only=True)
+    owner = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model = Task
